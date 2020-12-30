@@ -5,6 +5,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/ryboe/q"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -20,10 +21,10 @@ var latexSpecialSym = map[string]string{
 	`}`: `\}`,
 	`~`: `\textasciitilde`,
 	`^`: `\textasciicircum`,
-	`\`: `/`,
 }
 
 func escapeText(text string) string {
+	text = strings.ReplaceAll(text, `\`, "/")
 	for c, r := range latexSpecialSym {
 		text = strings.ReplaceAll(text, c, r)
 	}
@@ -64,9 +65,13 @@ func (c *Converter) walker(ctx context.Context, n *html.Node, buf *bytes.Buffer)
 	case atom.Article, atom.Html, atom.Head, atom.Body:
 	case atom.Span:
 	case atom.Div:
-	case atom.B:
+	case atom.Sup:
+		return c.walkSup(ctx, n, buf)
+	case atom.Center:
+		return c.walkCenter(ctx, n, buf)
+	case atom.B, atom.Strong:
 		return c.walkB(ctx, n, buf)
-	case atom.I:
+	case atom.I, atom.Em:
 		return c.walkI(ctx, n, buf)
 	case atom.P:
 		return c.walkP(ctx, n, buf)
@@ -74,6 +79,8 @@ func (c *Converter) walker(ctx context.Context, n *html.Node, buf *bytes.Buffer)
 		return c.walkA(ctx, n, buf)
 	case atom.Img:
 		return c.walkImg(ctx, n, buf)
+	case atom.H1, atom.H2, atom.H3, atom.H4, atom.H5, atom.H6:
+		return c.walkHAny(ctx, n, buf)
 	default:
 		if n.DataAtom.String() != "" {
 			q.Q("unknown type", n.DataAtom, n.DataAtom.String(), n.Attr)
@@ -93,6 +100,76 @@ func (c *Converter) walker(ctx context.Context, n *html.Node, buf *bytes.Buffer)
 	return nil
 }
 
+var hdgLevelToKeyword = map[atom.Atom]string{
+	atom.H1: "chapter",
+	atom.H2: "section",
+	atom.H3: "subsection",
+	atom.H4: "subsubsection",
+	atom.H5: "paragraph",
+	atom.H6: "subparagraph",
+}
+
+func (c *Converter) walkHAny(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+
+	word, ok := hdgLevelToKeyword[n.DataAtom]
+	if !ok {
+		return errors.Errorf("cannot render heading level '%v'", n.DataAtom.String())
+	}
+	buf.WriteString("\n\\" + word + "*{")
+	buf.WriteString(str)
+	buf.WriteString("}\n")
+	return nil
+
+}
+
+func (c *Converter) walkCenter(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n\\begin{center}\n")
+	buf.WriteString(str)
+	buf.WriteString("\n\\end{center}\n")
+	return nil
+}
+func (c *Converter) walkSup(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\\textsuperscript{")
+	buf.WriteString(str)
+	buf.WriteByte('}')
+	return nil
+}
 func (c *Converter) walkB(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
 	nbuf := bytes.NewBuffer(nil)
 
@@ -169,6 +246,11 @@ func (c *Converter) walkA(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 		}
 	}
 	str := nbuf.String()
+	if url == "#" {
+		buf.WriteString(str)
+		return nil
+	}
+
 	buf.WriteString("\\href{" + url + "}{")
 	buf.WriteString(str)
 	buf.WriteByte('}')
@@ -176,7 +258,6 @@ func (c *Converter) walkA(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 }
 
 func (c *Converter) walkImg(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
-	q.Q(n.Attr)
 	var alt string
 	var url string
 	for _, a := range n.Attr {

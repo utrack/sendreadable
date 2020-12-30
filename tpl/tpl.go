@@ -14,9 +14,9 @@ type Request struct {
 	SourceName    string
 	AvgTimeString string
 
-	ImagePath string
-
 	Content string
+
+	FontPath string
 }
 
 func Render(r Request, w io.Writer) error {
@@ -30,8 +30,8 @@ const text = `
 %\usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fontspec}
-\setmainfont[ Path = /tmp/sendreadable/fonts/] {BasisGrotesquePro-Regular}
-\setsansfont[ Path = /tmp/sendreadable/fonts/] {BasisGrotesquePro-Regular}
+\setsansfont[Path = $$ .FontPath $$/] {BasisGrotesquePro-Regular}
+\setmainfont[Path = $$ .FontPath $$/, BoldFont={BasisGrotesquePro-Bold}, ItalicFont={BasisGrotesquePro-Italic}, BoldItalicFont={BasisGrotesquePro-BoldItalic}]{BasisGrotesquePro-Regular}
 
 \usepackage{graphicx}
 % \setmonofont[ Path = fonts/,  ] { }
@@ -80,19 +80,12 @@ const text = `
 }
 \makeatother
 
-\titleformat{\section}
-  {\normalfont\sffamily\Large\AlegreyaSansExtraBold}
-  {\thesection}{}{}
+%\titleformat{\section}
+%  {\normalfont\Large\bfseries}{\thesection}{1em}{}
 
 \begin{document}
 
 \maketitle
-
-$$ if ne .ImagePath "" $$
-\begin{center}
-  \includegraphics[max width=\textwidth,keepaspectratio]{$$ .ImagePath $$}
-\end{center}
-$$ end $$
 
 $$ .Content $$
 

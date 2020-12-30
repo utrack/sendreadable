@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -15,7 +14,7 @@ import (
 	"github.com/utrack/sendreadable/tpl"
 )
 
-func runToPdf(ctx context.Context, url string) (string, error) {
+func runToPdf(ctx context.Context, url string, pathToFonts string) (string, error) {
 
 	dir, err := ioutil.TempDir(os.TempDir()+"/sendreadable", "*")
 	if err != nil {
@@ -36,14 +35,6 @@ func runToPdf(ctx context.Context, url string) (string, error) {
 		return "", err
 	}
 
-	if art.Image != "" {
-		art.Image, err = dwn.Download(ctx, art.Image)
-		if err != nil {
-			log.Println("when pulling cover image: ", err.Error())
-			art.Image = ""
-		}
-	}
-
 	dst, err := ioutil.TempFile(dir, "main.tex")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create tempfile")
@@ -56,8 +47,8 @@ func runToPdf(ctx context.Context, url string) (string, error) {
 		URL:           art.URL,
 		SourceName:    art.Source,
 		AvgTimeString: art.AvgTimeString,
-		ImagePath:     art.Image,
 		Content:       art.Content,
+		FontPath:      pathToFonts,
 	}
 	err = tpl.Render(tplReq, dst)
 	if err != nil {

@@ -38,7 +38,6 @@ func NewArticle(ctx context.Context,
 		Author:        art.Byline,
 		Excerpt:       art.Excerpt,
 		Source:        art.SiteName,
-		Image:         art.Image,
 		AvgTimeString: "",
 	}
 	ret.Author = strings.TrimSpace(ret.Author)
