@@ -3,6 +3,7 @@ package htmllatex
 import (
 	"bytes"
 	"context"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -32,16 +33,18 @@ func escapeText(text string) string {
 }
 
 type Converter struct {
-	id ImageDownloader
+	id  ImageDownloader
+	uri string
 }
 
 type ImageDownloader interface {
 	Download(context.Context, string) (string, error)
 }
 
-func New(dwn ImageDownloader) *Converter {
+func New(dwn ImageDownloader, uri string) *Converter {
 	return &Converter{
-		id: dwn,
+		id:  dwn,
+		uri: uri,
 	}
 }
 
@@ -65,6 +68,14 @@ func (c *Converter) walker(ctx context.Context, n *html.Node, buf *bytes.Buffer)
 	case atom.Article, atom.Html, atom.Head, atom.Body:
 	case atom.Span:
 	case atom.Div:
+	case atom.Hr:
+		return c.walkHr(ctx, n, buf)
+	case atom.Dd:
+		return c.walkDd(ctx, n, buf)
+	case atom.Dt:
+		return c.walkDt(ctx, n, buf)
+	case atom.Dl:
+		return c.walkDl(ctx, n, buf)
 	case atom.Sup:
 		return c.walkSup(ctx, n, buf)
 	case atom.Center:
@@ -134,6 +145,78 @@ func (c *Converter) walkHAny(ctx context.Context, n *html.Node, buf *bytes.Buffe
 
 }
 
+func (c *Converter) walkHr(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n\\hrule\n")
+	buf.WriteString(str)
+	return nil
+}
+
+func (c *Converter) walkDl(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n" + `\begin{description}[style=unboxed, labelwidth=\linewidth, font =\sffamily\itshape\bfseries, listparindent =0pt, before =\sffamily]`)
+	buf.WriteString(str)
+	buf.WriteString("\n\\end{description}\n")
+	return nil
+}
+func (c *Converter) walkDt(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n\\item[") // TODO escape bracket
+	buf.WriteString(str)
+	buf.WriteString("]")
+	return nil
+}
+func (c *Converter) walkDd(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteByte('\n')
+	buf.WriteByte('\n')
+	buf.WriteString(str)
+	return nil
+}
 func (c *Converter) walkCenter(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
 	nbuf := bytes.NewBuffer(nil)
 
@@ -229,15 +312,15 @@ func (c *Converter) walkI(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 func (c *Converter) walkA(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
 	nbuf := bytes.NewBuffer(nil)
 
-	var url string
+	var uri string
 	for _, a := range n.Attr {
 		if a.Key == "href" {
-			url = a.Val
+			uri = a.Val
 			break
 		}
 	}
 
-	url = strings.ReplaceAll(url, `\`, `\\`)
+	uri = strings.ReplaceAll(uri, `\`, `\\`)
 
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
 		err := c.walker(ctx, child, nbuf)
@@ -246,12 +329,20 @@ func (c *Converter) walkA(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 		}
 	}
 	str := nbuf.String()
-	if url == "#" {
+
+	if u, err := url.Parse(uri); err == nil && !u.IsAbs() {
+		r, err := url.Parse(c.uri)
+		if err == nil {
+			uri = r.ResolveReference(u).String()
+		}
+	}
+
+	if uri == "#" {
 		buf.WriteString(str)
 		return nil
 	}
 
-	buf.WriteString("\\href{" + url + "}{")
+	buf.WriteString("\\href{" + uri + "}{")
 	buf.WriteString(str)
 	buf.WriteByte('}')
 	return nil

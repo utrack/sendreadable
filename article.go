@@ -29,7 +29,7 @@ func NewArticle(ctx context.Context,
 	dwn htmllatex.ImageDownloader,
 ) (Article, error) {
 
-	conv := htmllatex.New(dwn)
+	conv := htmllatex.New(dwn, url)
 
 	ret := Article{
 		URL:           url,
