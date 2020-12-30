@@ -1,45 +1,43 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
-	"text/template"
 	"time"
 
 	"github.com/go-shiori/go-readability"
 	"github.com/pkg/errors"
+	"github.com/utrack/sendreadable/images"
+	"github.com/utrack/sendreadable/tpl"
 )
 
-var tpl = template.Must(template.New("").Delims("$$", "$$").Parse(tplLatex))
+func runToPdf(ctx context.Context, url string) (string, error) {
 
-func runToPdf(url string) error {
+	dir, err := ioutil.TempDir(os.TempDir()+"/sendreadable", "*")
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create tempdir")
+	}
 
-	fmt.Println("pulling ", url)
+	fmt.Println("pulling ", url, " , dir ", dir)
 
 	a, err := readability.FromURL(url, 30*time.Second)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse")
+		return "", errors.Wrap(err, "failed to parse")
 	}
 
-	art, err := NewArticle(a, url)
+	dwn := images.NewRunner(dir)
+
+	art, err := NewArticle(ctx, a, url, dwn)
 	if err != nil {
-		return err
+		return "", err
 	}
-
-	//fmt.Println(art.Content)
-	//return nil
-
-	dir, err := ioutil.TempDir(os.TempDir(), "sendreadable-*")
-	if err != nil {
-		return errors.Wrap(err, "failed to create tempdir")
-	}
-	defer os.RemoveAll(dir)
 
 	if art.Image != "" {
-		art.Image, err = pullImage(art.Image, time.Second*10, dir)
+		art.Image, err = dwn.Download(ctx, art.Image)
 		if err != nil {
 			log.Println("when pulling cover image: ", err.Error())
 			art.Image = ""
@@ -48,30 +46,35 @@ func runToPdf(url string) error {
 
 	dst, err := ioutil.TempFile(dir, "main.tex")
 	if err != nil {
-		return errors.Wrap(err, "failed to create tempfile")
+		return "", errors.Wrap(err, "failed to create tempfile")
 	}
 	defer dst.Close()
 
-	err = tpl.Execute(dst, art)
+	tplReq := tpl.Request{
+		Title:         art.Title,
+		Author:        art.Author,
+		URL:           art.URL,
+		SourceName:    art.Source,
+		AvgTimeString: art.AvgTimeString,
+		ImagePath:     art.Image,
+		Content:       art.Content,
+	}
+	err = tpl.Render(tplReq, dst)
 	if err != nil {
-		return errors.Wrap(err, "failed to execute")
+		return "", errors.Wrap(err, "failed to execute")
 	}
 
 	tmpName := dst.Name()
 	err = dst.Close()
 	if err != nil {
-		return errors.Wrap(err, "failed to close tmpfile")
+		return "", errors.Wrap(err, "failed to close tmpfile")
 	}
 
 	cmd := exec.Command("xelatex", tmpName)
 	cmd.Dir = dir
-	fmt.Printf("running '%v'\n", cmd.String())
 	logs, err := cmd.CombinedOutput()
 	if err != nil {
-		return errors.Wrap(err, "when running pdflatex("+string(logs)+")")
+		return "", errors.Wrap(err, "when running pdflatex, stderr: ("+string(logs)+")")
 	}
-	fmt.Println(string(logs))
-	fmt.Println(dir + "/main.pdf")
-	<-time.After(time.Minute * 5)
-	return nil
+	return dir, nil
 }

@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/go-shiori/go-readability"
-	"github.com/k3a/html2text"
 	"github.com/pkg/errors"
+	"github.com/utrack/sendreadable/htmllatex"
 )
 
 type Article struct {
@@ -22,7 +23,13 @@ type Article struct {
 	AvgTimeString string
 }
 
-func NewArticle(art readability.Article, url string) (Article, error) {
+func NewArticle(ctx context.Context,
+	art readability.Article,
+	url string,
+	dwn htmllatex.ImageDownloader,
+) (Article, error) {
+
+	conv := htmllatex.New(dwn)
 
 	ret := Article{
 		URL:           url,
@@ -36,7 +43,7 @@ func NewArticle(art readability.Article, url string) (Article, error) {
 	}
 	ret.Author = strings.TrimSpace(ret.Author)
 
-	tex, err := htmlToTex(art.Content)
+	tex, err := conv.Do(ctx, art.Content)
 	if err != nil {
 		return Article{}, errors.Wrap(err, "can't convert HTML to Tex")
 	}
@@ -66,25 +73,4 @@ func wc(s string) int {
 		}
 	}
 	return count + 1
-}
-
-var latexSpecialSym = map[string]string{
-	`&`: `\&`,
-	`%`: `\%`,
-	`$`: `\$`,
-	`#`: `\#`,
-	`_`: `\_`,
-	`{`: `\{`,
-	`}`: `\}`,
-	`~`: `\textasciitilde`,
-	`^`: `\textasciicircum`,
-	`\`: `/`,
-}
-
-func formattedText(ht string) string {
-	plain := html2text.HTML2Text(ht)
-	for c, r := range latexSpecialSym {
-		plain = strings.ReplaceAll(plain, c, r)
-	}
-	return plain
 }

@@ -1,6 +1,29 @@
-package main
+package tpl
 
-const tplLatex = `
+import (
+	"io"
+	"text/template"
+)
+
+var tpl = template.Must(template.New("").Delims("$$", "$$").Parse(text))
+
+type Request struct {
+	Title         string
+	Author        string
+	URL           string
+	SourceName    string
+	AvgTimeString string
+
+	ImagePath string
+
+	Content string
+}
+
+func Render(r Request, w io.Writer) error {
+	return tpl.Execute(w, r)
+}
+
+const text = `
 % universal settings
 \documentclass[a4paper,12pt,oneside]{article}
 \usepackage{anyfontsize}
@@ -24,12 +47,13 @@ const tplLatex = `
 \usepackage{calc}
 \usepackage{qrcode}
 \usepackage{wrapfig}
-\usepackage{supertabular}
+\usepackage{tabularx}
 \usepackage{multirow}
-
+\usepackage[export]{adjustbox} % loads also graphicx
+\usepackage[font=small]{caption}
 
 \title{$$ .Title $$}
-\author{$$ .Author $$ | \href{$$ .URL $$}{$$ .Source $$}}
+\author{$$ .Author $$$$ if .SourceName $$ | \href{$$ .URL $$}{$$ .SourceName $$}$$ end $$}
 \newcommand{\readingTime}{$$ .AvgTimeString $$}
 
 
@@ -45,14 +69,13 @@ const tplLatex = `
 \def\maketitle{\noindent{
     \begin{flushleft}
         {\fontsize{26}{0}\selectfont\sffamily\bfseries\@title}\\\vspace{1em}%
-        \begin{tabular}{l r}
-
-          $$ if ne .Author "" $${\@author}$$ end $$\vspace{0.3em} & \multirow{2}{*}{\hspace{2cm}\qrcode[hyperlink,level=Q,tight]{$$ .URL $$}}\\%
-          {\small{\readingTime}} &
-        \end{tabular}\\
+    \end{flushleft}
+        \begin{tabularx}{\textwidth}{X r}
+          $$ if ne .Author "" $${\@author}$$ end $$ & \multirow{2}{*}{\qrcode[hyperlink,level=Q,tight]{$$ .URL $$}}\\%
+          {\small{\readingTime}}\vspace{2em} & \\
+        \end{tabularx}\\
         \vspace{2em}
         {\hrulefill}%
-    \end{flushleft}
   }
 }
 \makeatother
@@ -65,9 +88,9 @@ const tplLatex = `
 
 \maketitle
 
-$$ if ne .Image "" $$
+$$ if ne .ImagePath "" $$
 \begin{center}
-  \makebox[\textwidth]{\includegraphics[width=\textwidth]{$$ .Image $$}}
+  \includegraphics[max width=\textwidth,keepaspectratio]{$$ .ImagePath $$}
 \end{center}
 $$ end $$
 
