@@ -30,6 +30,7 @@ const text = `
 %\usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fontspec}
+\usepackage[main=english,russian]{babel}
 \setsansfont[Path = $$ .FontPath $$/] {BasisGrotesquePro-Regular}
 \setmainfont[Path = $$ .FontPath $$/, BoldFont={BasisGrotesquePro-Bold}, ItalicFont={BasisGrotesquePro-Italic}, BoldItalicFont={BasisGrotesquePro-BoldItalic}]{BasisGrotesquePro-Regular}
 
@@ -46,13 +47,13 @@ const text = `
 \usepackage{setspace}
 \usepackage{calc}
 \usepackage{qrcode}
-\usepackage{wrapfig}
 \usepackage{tabularx}
 \usepackage{multirow}
 \usepackage[export]{adjustbox} % loads also graphicx
 \usepackage[font=small]{caption}
 \usepackage{booktabs} % table hlines
 \usepackage{ltablex}
+\usepackage{eso-pic} % topright qrcode
 
 \usepackage{etoolbox}
 \AtBeginEnvironment{quote}{\singlespacing\small}
@@ -69,18 +70,21 @@ const text = `
 \setlist[itemize]{itemsep=0em}
 \setlength{\parskip}{0.75em}
 
+% qrcode at top right
+\newcommand\AtPageUpperRight[1]{\AtPageUpperLeft{%
+   \makebox[\paperwidth][r]{#1}}}
+
 % title format
 \makeatletter
 \def\maketitle{\noindent{
-    \begin{flushleft}
-        {\fontsize{26}{0}\selectfont\sffamily\bfseries\@title}\\\vspace{1em}%
-    \end{flushleft}
-        \begin{tabularx}{\linewidth}{X r}
-          $$ if ne .Author "" $${\@author}$$ end $$ & \multirow{2}{*}{\qrcode[hyperlink,level=Q,tight]{$$ .URL $$}}\\%
-          {\small{\readingTime}}\vspace{2em} & \\
-        \end{tabularx}
-        \vspace{2em}
-        {\hrulefill}%
+\begin{flushleft}
+ {\fontsize{26}{0}\selectfont\sffamily\bfseries\@title}\\
+ \vspace{1em}
+\end{flushleft}
+$$ if ne .Author "" $${\@author}\\$$ end $$
+{\small{\readingTime}}\\
+\vspace{1em}
+{\hrulefill}
   }
 }
 \makeatother
@@ -89,6 +93,10 @@ const text = `
 %  {\normalfont\Large\bfseries}{\thesection}{1em}{}
 
 \begin{document}
+
+\AddToShipoutPictureBG*{%
+  \AtPageUpperRight{\raisebox{-\height}{\frame{{\qrcode[hyperlink,level=Q,tight,height=3cm]{$$ .URL $$}}}}}}
+
 
 \maketitle
 
