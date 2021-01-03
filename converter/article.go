@@ -1,4 +1,4 @@
-package main
+package converter
 
 import (
 	"context"
@@ -32,12 +32,12 @@ func NewArticle(ctx context.Context,
 	conv := htmllatex.New(dwn, url)
 
 	ret := Article{
-		URL:           url,
+		URL:           conv.DoPlain(url),
 		Content:       "",
-		Title:         art.Title,
-		Author:        art.Byline,
-		Excerpt:       art.Excerpt,
-		Source:        art.SiteName,
+		Title:         conv.DoPlain(art.Title),
+		Author:        conv.DoPlain(art.Byline),
+		Excerpt:       conv.DoPlain(art.Excerpt),
+		Source:        conv.DoPlain(art.SiteName),
 		AvgTimeString: "",
 	}
 	ret.Author = strings.TrimSpace(ret.Author)

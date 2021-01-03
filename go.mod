@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/chai2010/webp v1.1.0
+	github.com/go-chi/chi v1.5.1
 	github.com/go-shiori/go-readability v0.0.0-20201011032228-bdc871772408
 	github.com/k3a/html2text v1.0.7
 	github.com/pkg/errors v0.9.1

@@ -42,7 +42,7 @@ const text = `
 \usepackage{xcolor}
 % pdflatex only
 % \usepackage[tracking=true, letterspace=50]{microtype}
-\usepackage[left=1.25in, right=1.25in, top=1in, bottom=1.25in]{geometry}
+\usepackage[left=0.75in, right=0.75in, top=1in, bottom=1in]{geometry}
 \usepackage{setspace}
 \usepackage{calc}
 \usepackage{qrcode}
@@ -51,6 +51,11 @@ const text = `
 \usepackage{multirow}
 \usepackage[export]{adjustbox} % loads also graphicx
 \usepackage[font=small]{caption}
+\usepackage{booktabs} % table hlines
+\usepackage{ltablex}
+
+\usepackage{etoolbox}
+\AtBeginEnvironment{quote}{\singlespacing\small}
 
 \title{$$ .Title $$}
 \author{$$ .Author $$$$ if .SourceName $$ | \href{$$ .URL $$}{$$ .SourceName $$}$$ end $$}
@@ -58,7 +63,7 @@ const text = `
 
 
 % basic global settings
-\linespread{1.5}
+\linespread{1.4}
 % pdflatex only
 % \SetTracking{encoding=*,shape=sc}{50}
 \setlist[itemize]{itemsep=0em}
@@ -70,10 +75,10 @@ const text = `
     \begin{flushleft}
         {\fontsize{26}{0}\selectfont\sffamily\bfseries\@title}\\\vspace{1em}%
     \end{flushleft}
-        \begin{tabularx}{\textwidth}{X r}
+        \begin{tabularx}{\linewidth}{X r}
           $$ if ne .Author "" $${\@author}$$ end $$ & \multirow{2}{*}{\qrcode[hyperlink,level=Q,tight]{$$ .URL $$}}\\%
           {\small{\readingTime}}\vspace{2em} & \\
-        \end{tabularx}\\
+        \end{tabularx}
         \vspace{2em}
         {\hrulefill}%
   }

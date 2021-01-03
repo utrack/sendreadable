@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -29,6 +30,8 @@ func escapeText(text string) string {
 	for c, r := range latexSpecialSym {
 		text = strings.ReplaceAll(text, c, r)
 	}
+	text = strings.ReplaceAll(text, `[`, "{[")
+	text = strings.ReplaceAll(text, `]`, "]}")
 	return text
 }
 
@@ -48,7 +51,12 @@ func New(dwn ImageDownloader, uri string) *Converter {
 	}
 }
 
+func (c *Converter) DoPlain(text string) string {
+	return escapeText(text)
+}
+
 func (c *Converter) Do(ctx context.Context, htext string) (string, error) {
+	q.Q(htext)
 	r := strings.NewReader(htext)
 
 	n, err := html.ParseWithOptions(r, html.ParseOptionEnableScripting(false))
@@ -63,13 +71,28 @@ func (c *Converter) Do(ctx context.Context, htext string) (string, error) {
 }
 
 func (c *Converter) walker(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	//buf.WriteString(" \\iffalse " + n.DataAtom.String() + " \\fi ")
 
 	switch n.DataAtom {
 	case atom.Article, atom.Html, atom.Head, atom.Body:
 	case atom.Span:
 	case atom.Div:
+	case atom.Table:
+		return c.walkTable(ctx, n, buf)
+	case atom.Tr:
+		return c.walkTr(ctx, n, buf)
+	case atom.Td, atom.Th: // TODO bold center for Th
+		return c.walkTd(ctx, n, buf)
+	case atom.Br:
+		return c.walkBr(ctx, n, buf)
 	case atom.Hr:
 		return c.walkHr(ctx, n, buf)
+	case atom.Ol:
+		return c.walkOl(ctx, n, buf)
+	case atom.Ul:
+		return c.walkUl(ctx, n, buf)
+	case atom.Li:
+		return c.walkLi(ctx, n, buf)
 	case atom.Dd:
 		return c.walkDd(ctx, n, buf)
 	case atom.Dt:
@@ -80,8 +103,14 @@ func (c *Converter) walker(ctx context.Context, n *html.Node, buf *bytes.Buffer)
 		return c.walkSup(ctx, n, buf)
 	case atom.Center:
 		return c.walkCenter(ctx, n, buf)
+	case atom.Blockquote:
+		return c.walkBlockquote(ctx, n, buf)
 	case atom.B, atom.Strong:
 		return c.walkB(ctx, n, buf)
+	case atom.Abbr:
+		return c.walkAbbr(ctx, n, buf)
+	case atom.Small:
+		return c.walkSmall(ctx, n, buf)
 	case atom.I, atom.Em:
 		return c.walkI(ctx, n, buf)
 	case atom.P:
@@ -99,7 +128,12 @@ func (c *Converter) walker(ctx context.Context, n *html.Node, buf *bytes.Buffer)
 	}
 
 	if n.Type == html.TextNode {
-		buf.WriteString(escapeText(n.Data))
+		str := escapeText(n.Data)
+		strCh := strings.TrimSpace(str)
+		strCh = strings.Trim(str, "\r\n\t")
+		if strCh != "" {
+			buf.WriteString(str)
+		}
 	}
 
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
@@ -118,6 +152,99 @@ var hdgLevelToKeyword = map[atom.Atom]string{
 	atom.H4: "subsubsection",
 	atom.H5: "paragraph",
 	atom.H6: "subparagraph",
+}
+
+func (c *Converter) walkTable(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	cols := countTableCells(n)
+	q.Q("table count", cols)
+	ctx = cntNotOuterPar(ctx)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n\\begin{center}\\begin{tabularx}{\\textwidth}{ | l |")
+	for i := 1; i < cols; i++ {
+		buf.WriteString(" X |")
+	}
+	buf.WriteByte('}')
+	buf.WriteString(str)
+	buf.WriteString("\\end{tabularx}\\end{center}")
+
+	return nil
+}
+
+func (c *Converter) walkTr(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	str = strings.TrimSuffix(str, " &")
+	buf.WriteString(str)
+	buf.WriteString(" \\\\\\midrule\n")
+	return nil
+}
+func (c *Converter) walkTd(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	var colspan int
+	for _, v := range n.Attr {
+		if v.Key != "colspan" {
+			continue
+		}
+		colspan, _ = strconv.Atoi(v.Val)
+	}
+	str := nbuf.String()
+	//str = strings.ReplaceAll(str, "\n", "\\linebreak")
+	if colspan > 0 {
+		buf.WriteString("\\multicolumn{" + strconv.Itoa(colspan) + "}{c}{")
+	}
+	buf.WriteString(str)
+	if colspan > 0 {
+		buf.WriteByte('}')
+	}
+	buf.WriteString(" &")
+	return nil
+}
+
+func countTableCells(n *html.Node) int {
+	if n.DataAtom == atom.Tr {
+		var localCount int
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			if child.DataAtom == atom.Td || child.DataAtom == atom.Th {
+				localCount++
+				continue
+			}
+		}
+		return localCount
+	}
+
+	var max int
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		c := countTableCells(child)
+		if c > max {
+			max = c
+		}
+	}
+
+	return max
 }
 
 func (c *Converter) walkHAny(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
@@ -143,6 +270,102 @@ func (c *Converter) walkHAny(ctx context.Context, n *html.Node, buf *bytes.Buffe
 	buf.WriteString("}\n")
 	return nil
 
+}
+func (c *Converter) walkOl(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n\\begin{enumerate}")
+	buf.WriteString(str)
+	buf.WriteString("\\end{enumerate}")
+	return nil
+}
+func (c *Converter) walkUl(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n\\begin{itemize}")
+	buf.WriteString(str)
+	buf.WriteString("\n\\end{itemize}")
+	return nil
+}
+func (c *Converter) walkLi(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n\\item ")
+	buf.WriteString(str)
+	return nil
+}
+
+func (c *Converter) walkAbbr(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	var title string
+	for _, a := range n.Attr {
+		if a.Key == "title" {
+			title = a.Val
+			break
+		}
+	}
+	buf.WriteString(str)
+	buf.WriteString("\\footnote{" + escapeText(title) + "}")
+
+	return nil
+}
+func (c *Converter) walkBr(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\\linebreak")
+	buf.WriteString(str)
+	return nil
 }
 
 func (c *Converter) walkHr(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
@@ -252,6 +475,44 @@ func (c *Converter) walkSup(ctx context.Context, n *html.Node, buf *bytes.Buffer
 	buf.WriteString(str)
 	buf.WriteByte('}')
 	return nil
+
+}
+
+func (c *Converter) walkBlockquote(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\n\n\\begin{quote}\n")
+	buf.WriteString(str)
+	buf.WriteString("\n\\end{quote}\n")
+	return nil
+}
+func (c *Converter) walkSmall(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
+	nbuf := bytes.NewBuffer(nil)
+
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		err := c.walker(ctx, child, nbuf)
+		if err != nil {
+			return err
+		}
+	}
+	str := nbuf.String()
+	if str == "" {
+		return nil
+	}
+	buf.WriteString("\\small{")
+	buf.WriteString(str)
+	buf.WriteByte('}')
+	return nil
 }
 func (c *Converter) walkB(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
 	nbuf := bytes.NewBuffer(nil)
@@ -320,7 +581,8 @@ func (c *Converter) walkA(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 		}
 	}
 
-	uri = strings.ReplaceAll(uri, `\`, `\\`)
+	// uri = strings.ReplaceAll(uri, `\`, `\\`)
+	// uri = strings.ReplaceAll(uri, `%`, `%%`)
 
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
 		err := c.walker(ctx, child, nbuf)
@@ -342,7 +604,7 @@ func (c *Converter) walkA(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 		return nil
 	}
 
-	buf.WriteString("\\href{" + uri + "}{")
+	buf.WriteString("\\href{" + escapeText(uri) + "}{")
 	buf.WriteString(str)
 	buf.WriteByte('}')
 	return nil
@@ -360,6 +622,8 @@ func (c *Converter) walkImg(ctx context.Context, n *html.Node, buf *bytes.Buffer
 		}
 	}
 
+	alt = escapeText(html.UnescapeString(alt))
+
 	if url == "" {
 		return nil
 	}
@@ -374,13 +638,23 @@ func (c *Converter) walkImg(ctx context.Context, n *html.Node, buf *bytes.Buffer
 		)
 		return nil
 	}
-	buf.WriteByte('\n')
-	buf.WriteString(`
+	if isOuterPar(ctx) {
+		buf.WriteString(`
 \begin{figure}[h]
   \centering
   \includegraphics[max width=\textwidth,keepaspectratio]{` + m + `}
-  {\caption*{` + escapeText(html.UnescapeString(alt)) + `}}
+  {\caption*{` + alt + `}}
 \end{figure}
 `)
+		return nil
+	}
+
+	buf.WriteString("\\includegraphics[max width=\\textwidth,keepaspectratio]{")
+	buf.WriteString(m)
+	buf.WriteByte('}')
+	if alt != "" {
+		buf.WriteString("\\footnote{" + alt + "}")
+	}
+
 	return nil
 }
