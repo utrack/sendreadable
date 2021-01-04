@@ -14,6 +14,7 @@ var page = `
 </form>
 
 <p>Click to convert your article to PDF.</p>
+<p>If you notice any problems - please drop an email to nick+sendreadable АТ koptelov DОТ me .</p>
 
 </body>
 </html>

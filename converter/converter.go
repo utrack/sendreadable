@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-shiori/go-readability"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/utrack/sendreadable/images"
 	"github.com/utrack/sendreadable/tpl"
 )
@@ -95,7 +96,8 @@ func (s *Service) Convert(ctx context.Context, url string) (*Result, error) {
 	cmd.Dir = dir
 	logs, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, errors.Wrap(err, "when running pdflatex, stderr: ("+string(logs)+")")
+		logrus.Error("error from xelatex", err, string(logs))
+		return nil, errors.New("MARKUP ERROR: can't render the article: error has been logged")
 	}
 	return &Result{
 		Filename:    dir + "/main.pdf",

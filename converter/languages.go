@@ -8,6 +8,7 @@ var codeToBabelName = map[string]string{
 	"es": "spanish",
 	"it": "italian",
 	"de": "ngerman",
+	"fr": "french",
 }
 
 func langsToArray(htmlLang string, ctypes []string) []string {

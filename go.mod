@@ -9,6 +9,7 @@ require (
 	github.com/k3a/html2text v1.0.7
 	github.com/pkg/errors v0.9.1
 	github.com/ryboe/q v1.0.12
+	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/image v0.0.0-20201208152932-35266b937fa6
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
