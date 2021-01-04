@@ -2,10 +2,11 @@ package tpl
 
 import (
 	"io"
+	"strings"
 	"text/template"
 )
 
-var tpl = template.Must(template.New("").Delims("$$", "$$").Parse(text))
+var tpl = template.Must(template.New("").Delims("$$", "$$").Funcs(template.FuncMap{"StringsJoin": strings.Join}).Parse(text))
 
 type Request struct {
 	Title         string
@@ -17,6 +18,8 @@ type Request struct {
 	Content string
 
 	FontPath string
+
+	Languages []string
 }
 
 func Render(r Request, w io.Writer) error {
@@ -25,12 +28,12 @@ func Render(r Request, w io.Writer) error {
 
 const text = `
 % universal settings
-\documentclass[a4paper,12pt,oneside]{article}
+\documentclass[a4paper,14pt,oneside]{article}
 \usepackage{anyfontsize}
 %\usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fontspec}
-\usepackage[main=english,russian]{babel}
+\usepackage$$ if .Languages $$[main=$$ StringsJoin .Languages "," $$]$$ end $${babel}
 \setsansfont[Path = $$ .FontPath $$/] {BasisGrotesquePro-Regular}
 \setmainfont[Path = $$ .FontPath $$/, BoldFont={BasisGrotesquePro-Bold}, ItalicFont={BasisGrotesquePro-Italic}, BoldItalicFont={BasisGrotesquePro-BoldItalic}]{BasisGrotesquePro-Regular}
 

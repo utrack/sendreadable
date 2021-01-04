@@ -55,19 +55,35 @@ func (c *Converter) DoPlain(text string) string {
 	return escapeText(text)
 }
 
-func (c *Converter) Do(ctx context.Context, htext string) (string, error) {
+type Response struct {
+	Content  string
+	Language string
+}
+
+func (c *Converter) Do(ctx context.Context, htext string) (*Response, error) {
 	q.Q(htext)
 	r := strings.NewReader(htext)
 
 	n, err := html.ParseWithOptions(r, html.ParseOptionEnableScripting(false))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	buffer := bytes.NewBuffer(nil)
 
+	var lang string
+	for _, a := range n.Attr {
+		if a.Key == "lang" {
+			lang = a.Val
+		}
+	}
+
 	c.walker(ctx, n, buffer)
-	return buffer.String(), nil
+	ret := &Response{
+		Content:  buffer.String(),
+		Language: lang,
+	}
+	return ret, nil
 }
 
 func (c *Converter) walker(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {
@@ -158,7 +174,6 @@ func (c *Converter) walkTable(ctx context.Context, n *html.Node, buf *bytes.Buff
 	nbuf := bytes.NewBuffer(nil)
 
 	cols := countTableCells(n)
-	q.Q("table count", cols)
 	ctx = cntNotOuterPar(ctx)
 
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
@@ -171,13 +186,14 @@ func (c *Converter) walkTable(ctx context.Context, n *html.Node, buf *bytes.Buff
 	if str == "" {
 		return nil
 	}
-	buf.WriteString("\n\\begin{center}\\begin{tabularx}{\\textwidth}{ | l |")
-	for i := 1; i < cols; i++ {
-		buf.WriteString(" X |")
+	buf.WriteString("\n\\begin{center}\\begin{tabularx}{\\textwidth}{@{}l|")
+	for i := 1; i < cols-1; i++ {
+		buf.WriteString("X|")
 	}
-	buf.WriteByte('}')
+	buf.WriteString("X@{}")
+	buf.WriteString("}\\toprule\n")
 	buf.WriteString(str)
-	buf.WriteString("\\end{tabularx}\\end{center}")
+	buf.WriteString(" \\bottomrule\\end{tabularx}\\end{center}")
 
 	return nil
 }
@@ -193,7 +209,7 @@ func (c *Converter) walkTr(ctx context.Context, n *html.Node, buf *bytes.Buffer)
 	str := nbuf.String()
 	str = strings.TrimSuffix(str, " &")
 	buf.WriteString(str)
-	buf.WriteString(" \\\\\\midrule\n")
+	buf.WriteString(" \\\\\n")
 	return nil
 }
 func (c *Converter) walkTd(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {

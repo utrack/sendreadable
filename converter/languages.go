@@ -1,0 +1,26 @@
+package converter
+
+import "strings"
+
+var codeToBabelName = map[string]string{
+	"en": "english",
+	"ru": "russian",
+	"es": "spanish",
+	"it": "italian",
+	"de": "ngerman",
+}
+
+func langsToArray(htmlLang string, ctypes []string) []string {
+	var ret []string
+
+	if v, ok := codeToBabelName[htmlLang]; ok {
+		ret = append(ret, v)
+	}
+	for _, c := range ctypes {
+		c = strings.Split(c, "-")[0]
+		if v, ok := codeToBabelName[c]; ok {
+			ret = append(ret, v)
+		}
+	}
+	return ret
+}

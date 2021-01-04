@@ -46,7 +46,13 @@ func (s *Service) Convert(ctx context.Context, url string) (*Result, error) {
 
 	fmt.Println("pulling ", url, " , dir ", dir)
 
-	a, err := readability.FromURL(url, 30*time.Second)
+	r, err := pull(ctx, 30*time.Second, url)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot pull the page")
+	}
+	defer r.r.Close()
+
+	a, err := readability.FromReader(r.r, url)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse")
 	}
@@ -72,6 +78,7 @@ func (s *Service) Convert(ctx context.Context, url string) (*Result, error) {
 		AvgTimeString: art.AvgTimeString,
 		Content:       art.Content,
 		FontPath:      s.fontsPath,
+		Languages:     langsToArray(art.Language, r.lang),
 	}
 	err = tpl.Render(tplReq, dst)
 	if err != nil {

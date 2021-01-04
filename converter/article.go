@@ -21,6 +21,7 @@ type Article struct {
 	Source        string
 	Image         string
 	AvgTimeString string
+	Language      string
 }
 
 func NewArticle(ctx context.Context,
@@ -42,11 +43,12 @@ func NewArticle(ctx context.Context,
 	}
 	ret.Author = strings.TrimSpace(ret.Author)
 
-	tex, err := conv.Do(ctx, art.Content)
+	texRsp, err := conv.Do(ctx, art.Content)
 	if err != nil {
 		return Article{}, errors.Wrap(err, "can't convert HTML to Tex")
 	}
-	ret.Content = tex
+	ret.Content = texRsp.Content
+	ret.Language = texRsp.Language
 
 	count := wc(art.TextContent)
 
