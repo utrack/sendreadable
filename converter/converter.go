@@ -58,7 +58,7 @@ func (s *Service) Convert(ctx context.Context, url string) (*Result, error) {
 		return nil, errors.Wrap(err, "failed to parse")
 	}
 
-	dwn := images.NewRunner(dir)
+	dwn := images.NewRunner(dir, seedImg)
 
 	art, err := NewArticle(ctx, a, url, dwn)
 	if err != nil {
@@ -85,6 +85,8 @@ func (s *Service) Convert(ctx context.Context, url string) (*Result, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to execute")
 	}
+
+	dwn.Wait()
 
 	tmpName := dst.Name()
 	err = dst.Close()
