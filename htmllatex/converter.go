@@ -562,7 +562,9 @@ func (c *Converter) walkP(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 	if str == "" {
 		return nil
 	}
-	buf.WriteString("\n\\par ")
+	if isParable(ctx) {
+		buf.WriteString("\n\\par ")
+	}
 	buf.WriteString(str)
 	return nil
 }
@@ -599,6 +601,7 @@ func (c *Converter) walkA(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 
 	// uri = strings.ReplaceAll(uri, `\`, `\\`)
 	// uri = strings.ReplaceAll(uri, `%`, `%%`)
+	ctx = cntNotParable(ctx)
 
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
 		err := c.walker(ctx, child, nbuf)
@@ -645,13 +648,7 @@ func (c *Converter) walkImg(ctx context.Context, n *html.Node, buf *bytes.Buffer
 	}
 	m, err := c.id.Download(ctx, url)
 	if err != nil {
-		buf.WriteString("\n")
-		buf.WriteString(`
-\begin{center}
-  image not loaded (` + err.Error() + `)
-\end{center}
-`,
-		)
+		buf.WriteString(`(bad img: ` + err.Error() + `))`)
 		return nil
 	}
 	if isOuterPar(ctx) {

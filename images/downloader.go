@@ -18,7 +18,7 @@ type Runner struct {
 }
 
 const parallelImagesPerJob = 5
-const defaultTimeout = time.Second * 30
+const defaultTimeout = time.Second * 5
 
 func NewRunner(dir string) *Runner {
 	ch := make(chan struct{}, parallelImagesPerJob+1)
@@ -26,7 +26,7 @@ func NewRunner(dir string) *Runner {
 		ch <- struct{}{}
 	}
 
-	return &Runner{tickets: ch, cli: &http.Client{Timeout: defaultTimeout}}
+	return &Runner{tickets: ch, cli: &http.Client{Timeout: defaultTimeout}, dir: dir}
 }
 
 func (r *Runner) Download(ctx context.Context, url string) (string, error) {
@@ -40,6 +40,7 @@ func (r *Runner) Download(ctx context.Context, url string) (string, error) {
 		return "", errors.Wrapf(err, "cannot create GET request to '%v'", url)
 	}
 	req = req.WithContext(ctx)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; SendReadable/1.0; +https://sendreadable.utrack.dev)")
 
 	resp, err := r.cli.Do(req)
 	if err != nil {

@@ -31,6 +31,7 @@ func pull(ctx context.Context, timeout time.Duration, url string) (*pullRsp, err
 	if err != nil {
 		return nil, errors.Wrap(err, "creating GET request")
 	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; SendReadable/1.0; +https://sendreadable.utrack.dev)")
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
 	if err != nil {
