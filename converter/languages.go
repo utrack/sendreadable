@@ -1,6 +1,10 @@
 package converter
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/ryboe/q"
+)
 
 var codeToBabelName = map[string]string{
 	"en": "english",
@@ -9,6 +13,7 @@ var codeToBabelName = map[string]string{
 	"it": "italian",
 	"de": "ngerman",
 	"fr": "french",
+	"nl": "dutch",
 }
 
 func langsToArray(htmlLang string, ctypes []string) []string {
@@ -23,5 +28,6 @@ func langsToArray(htmlLang string, ctypes []string) []string {
 			ret = append(ret, v)
 		}
 	}
+	q.Q("langs", htmlLang, ctypes, ret)
 	return ret
 }

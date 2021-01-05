@@ -34,8 +34,7 @@ const text = `
 \usepackage[T1]{fontenc}
 \usepackage{fontspec}
 \usepackage$$ if .Languages $$[main=$$ StringsJoin .Languages "," $$]$$ end $${babel}
-\setsansfont[Path = $$ .FontPath $$/] {BasisGrotesquePro-Regular}
-\setmainfont[Path = $$ .FontPath $$/, BoldFont={BasisGrotesquePro-Bold}, ItalicFont={BasisGrotesquePro-Italic}, BoldItalicFont={BasisGrotesquePro-BoldItalic}]{BasisGrotesquePro-Regular}
+\setmainfont[Path = $$ .FontPath $$/, BoldFont={NotoSerif-Bold}, ItalicFont={NotoSerif-Italic}, BoldItalicFont={NotoSerif-BoldItalic}]{NotoSerif-Regular}
 
 \usepackage{graphicx}
 % \setmonofont[ Path = fonts/,  ] { }

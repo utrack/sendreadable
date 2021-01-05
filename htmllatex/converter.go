@@ -72,6 +72,7 @@ func (c *Converter) Do(ctx context.Context, htext string) (*Response, error) {
 	buffer := bytes.NewBuffer(nil)
 
 	var lang string
+	q.Q("root", n.Attr, n.DataAtom)
 	for _, a := range n.Attr {
 		if a.Key == "lang" {
 			lang = a.Val
@@ -316,6 +317,9 @@ func (c *Converter) walkUl(ctx context.Context, n *html.Node, buf *bytes.Buffer)
 	}
 	str := nbuf.String()
 	if str == "" {
+		return nil
+	}
+	if strings.Trim(str, "\n\r\t ") == "" {
 		return nil
 	}
 	buf.WriteString("\n\\begin{itemize}")
