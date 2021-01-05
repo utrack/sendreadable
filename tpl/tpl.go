@@ -28,7 +28,7 @@ func Render(r Request, w io.Writer) error {
 
 const text = `
 % universal settings
-\documentclass[a4paper,14pt,oneside]{article}
+\documentclass[a4paper,12pt,oneside]{article}
 \usepackage{anyfontsize}
 %\usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
@@ -75,7 +75,7 @@ const text = `
 
 
 % basic global settings
-\linespread{1.4}
+\linespread{1.3}
 % pdflatex only
 % \SetTracking{encoding=*,shape=sc}{50}
 \setlist[itemize]{itemsep=0em}
