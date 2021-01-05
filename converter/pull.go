@@ -3,7 +3,7 @@ package converter
 import (
 	"context"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
 	nurl "net/url"
 	"strings"
@@ -13,7 +13,7 @@ import (
 )
 
 type pullRsp struct {
-	r    io.ReadCloser
+	b    []byte
 	lang []string
 }
 
@@ -37,6 +37,7 @@ func pull(ctx context.Context, timeout time.Duration, url string) (*pullRsp, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch the page: %v", err)
 	}
+	defer resp.Body.Close()
 
 	// Make sure content type is HTML
 	cp := resp.Header.Get("Content-Type")
@@ -47,5 +48,7 @@ func pull(ctx context.Context, timeout time.Duration, url string) (*pullRsp, err
 
 	lang := resp.Header.Get("Content-Language")
 
-	return &pullRsp{r: resp.Body, lang: strings.Split(lang, ",")}, nil
+	b, err := ioutil.ReadAll(resp.Body)
+
+	return &pullRsp{b: b, lang: strings.Split(lang, ",")}, err
 }

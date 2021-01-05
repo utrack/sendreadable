@@ -21,7 +21,6 @@ type Article struct {
 	Source        string
 	Image         string
 	AvgTimeString string
-	Language      string
 }
 
 func NewArticle(ctx context.Context,
@@ -48,7 +47,6 @@ func NewArticle(ctx context.Context,
 		return Article{}, errors.Wrap(err, "can't convert HTML to Tex")
 	}
 	ret.Content = texRsp.Content
-	ret.Language = texRsp.Language
 
 	count := wc(art.TextContent)
 

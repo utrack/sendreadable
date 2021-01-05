@@ -56,8 +56,7 @@ func (c *Converter) DoPlain(text string) string {
 }
 
 type Response struct {
-	Content  string
-	Language string
+	Content string
 }
 
 func (c *Converter) Do(ctx context.Context, htext string) (*Response, error) {
@@ -71,18 +70,9 @@ func (c *Converter) Do(ctx context.Context, htext string) (*Response, error) {
 
 	buffer := bytes.NewBuffer(nil)
 
-	var lang string
-	q.Q("root", n.Attr, n.DataAtom)
-	for _, a := range n.Attr {
-		if a.Key == "lang" {
-			lang = a.Val
-		}
-	}
-
 	c.walker(ctx, n, buffer)
 	ret := &Response{
-		Content:  buffer.String(),
-		Language: lang,
+		Content: buffer.String(),
 	}
 	return ret, nil
 }
@@ -511,9 +501,9 @@ func (c *Converter) walkBlockquote(ctx context.Context, n *html.Node, buf *bytes
 	if str == "" {
 		return nil
 	}
-	buf.WriteString("\n\n\\begin{quote}\n")
+	buf.WriteString("\n\n\\begin{quotationb}\n")
 	buf.WriteString(str)
-	buf.WriteString("\n\\end{quote}\n")
+	buf.WriteString("\n\\end{quotationb}\n")
 	return nil
 }
 func (c *Converter) walkSmall(ctx context.Context, n *html.Node, buf *bytes.Buffer) error {

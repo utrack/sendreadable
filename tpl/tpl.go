@@ -34,6 +34,8 @@ const text = `
 \usepackage[T1]{fontenc}
 \usepackage{fontspec}
 \usepackage$$ if .Languages $$[main=$$ StringsJoin .Languages "," $$]$$ end $${babel}
+
+\setsansfont[Path = $$ .FontPath $$/] {OpenSans-Regular}
 \setmainfont[Path = $$ .FontPath $$/, BoldFont={NotoSerif-Bold}, ItalicFont={NotoSerif-Italic}, BoldItalicFont={NotoSerif-BoldItalic}]{NotoSerif-Regular}
 
 \usepackage{graphicx}
@@ -58,7 +60,14 @@ const text = `
 \usepackage{eso-pic} % topright qrcode
 
 \usepackage{etoolbox}
-\AtBeginEnvironment{quote}{\singlespacing\small}
+
+% quotes formatting
+\usepackage{framed}
+\newenvironment{quotationb}%
+{\begin{leftbar}\begin{quotation}}%
+{\end{quotation}\end{leftbar}}
+\renewenvironment{leftbar}{\def\FrameCommand{\vrule width 0.5pt \hspace{10pt}}\MakeFramed {\advance\hsize-\width \FrameRestore}}{\endMakeFramed}
+\AtBeginEnvironment{quotationb}{\singlespacing\small}
 
 \title{$$ .Title $$}
 \author{$$ .Author $$$$ if .SourceName $$ | \href{$$ .URL $$}{$$ .SourceName $$}$$ end $$}
