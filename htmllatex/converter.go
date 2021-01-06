@@ -21,8 +21,6 @@ var latexSpecialSym = map[string]string{
 	`_`: `\_`,
 	`{`: `\{`,
 	`}`: `\}`,
-	`~`: `\textasciitilde`,
-	`^`: `\textasciicircum`,
 }
 
 func escapeURI(uri string) string {
@@ -37,6 +35,8 @@ func escapeText(text string) string {
 	for c, r := range latexSpecialSym {
 		text = strings.ReplaceAll(text, c, r)
 	}
+	text = strings.ReplaceAll(text, `~`, "{\\textasciitilde}")
+	text = strings.ReplaceAll(text, `^`, "{\\textasciicurcum}")
 	text = strings.ReplaceAll(text, `[`, "{[")
 	text = strings.ReplaceAll(text, `]`, "]}")
 	return text
