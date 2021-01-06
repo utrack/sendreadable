@@ -24,6 +24,7 @@ var latexSpecialSym = map[string]string{
 }
 
 func escapeURI(uri string) string {
+	uri = strings.ReplaceAll(uri, "\\", "/")
 	uri = strings.ReplaceAll(uri, "%", "\\%")
 	uri = strings.ReplaceAll(uri, "#", "\\#")
 	uri = strings.ReplaceAll(uri, "~", "\\~")
