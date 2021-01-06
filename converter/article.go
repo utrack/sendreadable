@@ -32,7 +32,7 @@ func NewArticle(ctx context.Context,
 	conv := htmllatex.New(dwn, url)
 
 	ret := Article{
-		URL:           conv.DoPlain(url),
+		URL:           htmllatex.EscapeURI(url),
 		Content:       "",
 		Title:         conv.DoPlain(art.Title),
 		Author:        conv.DoPlain(art.Byline),

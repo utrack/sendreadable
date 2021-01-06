@@ -25,6 +25,13 @@ var latexSpecialSym = map[string]string{
 	`^`: `\textasciicircum`,
 }
 
+func escapeURI(uri string) string {
+	uri = strings.ReplaceAll(uri, "~", "\\~")
+	uri = strings.ReplaceAll(uri, "{", "%7B")
+	uri = strings.ReplaceAll(uri, "}", "%7D")
+	return uri
+}
+
 func escapeText(text string) string {
 	text = strings.ReplaceAll(text, `\`, "/")
 	for c, r := range latexSpecialSym {
@@ -59,8 +66,11 @@ type Response struct {
 	Content string
 }
 
+func EscapeURI(uri string) string {
+	return escapeURI(uri)
+}
+
 func (c *Converter) Do(ctx context.Context, htext string) (*Response, error) {
-	q.Q(htext)
 	r := strings.NewReader(htext)
 
 	n, err := html.ParseWithOptions(r, html.ParseOptionEnableScripting(false))
@@ -617,7 +627,7 @@ func (c *Converter) walkA(ctx context.Context, n *html.Node, buf *bytes.Buffer) 
 		return nil
 	}
 
-	buf.WriteString("\\href{" + escapeText(uri) + "}{")
+	buf.WriteString("\\href{" + escapeURI(uri) + "}{")
 	buf.WriteString(str)
 	buf.WriteByte('}')
 	return nil
