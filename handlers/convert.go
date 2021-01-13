@@ -21,13 +21,14 @@ func (h Handler) Convert(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	u := r.FormValue("url")
 	if u == "" {
-		w.Write([]byte(page))
+		// TODO login info
+		pageRender(w, r, pageRequest{})
 		return
 	}
 	res, err := h.svc.Convert(r.Context(), u)
 	if err != nil {
 		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
+		pageRenderErr(w, r, err)
 		return
 	}
 

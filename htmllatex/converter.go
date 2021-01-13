@@ -39,7 +39,7 @@ func escapeText(text string) string {
 		text = strings.ReplaceAll(text, c, r)
 	}
 	text = strings.ReplaceAll(text, `~`, "{\\textasciitilde}")
-	text = strings.ReplaceAll(text, `^`, "{\\textasciicurcum}")
+	text = strings.ReplaceAll(text, `^`, "{\\textasciicircum}")
 	text = strings.ReplaceAll(text, `[`, "{[")
 	text = strings.ReplaceAll(text, `]`, "]}")
 	return text

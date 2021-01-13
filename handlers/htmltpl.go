@@ -1,21 +1,33 @@
 package handlers
 
-var page = `
-<!DOCTYPE html>
-<html>
-<body>
+import (
+	"crypto/sha1"
+	"html/template"
+	"io/ioutil"
 
-<h2>sendreadable</h2>
+	"github.com/markbates/pkger"
+	"github.com/sirupsen/logrus"
+)
 
-<form>
-  <label for="url">Page URL:</label><br>
-  <input type="text" id="url" name="url"><br>
-  <input type="submit" value="Submit">
-</form>
+var tpl *template.Template
+var tplEtag string
 
-<p>Click to convert your article to PDF.</p>
-<p>If you notice any problems - please drop an email to nick+sendreadable АТ koptelov DОТ me .</p>
+func init() {
+	pkger.Include("/assets/src")
 
-</body>
-</html>
-`
+	f, err := pkger.Open("/assets/src/page.html")
+	if err != nil {
+		logrus.Fatal("cannot open page template", err)
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		logrus.Fatal("cannot read page template", err)
+	}
+
+	tpl = template.Must(template.New("").Parse(string(b)))
+
+	h := sha1.New()
+	h.Write(b)
+	tplEtag = string(h.Sum(nil))
+
+}
