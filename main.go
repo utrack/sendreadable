@@ -53,6 +53,11 @@ func main() {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	r.HandleFunc("/conv/conv/assets/style.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=600, stale-if-error=3600")
+		w.Header().Set("Content-Type", "text/css")
+		w.Write(style)
+	})
 	r.HandleFunc("/conv/assets/style.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=600, stale-if-error=3600")
 		w.Header().Set("Content-Type", "text/css")
@@ -65,6 +70,7 @@ func main() {
 	})
 
 	r.Get("/conv", http.HandlerFunc(hdl.Convert))
+	r.Get("/", http.HandlerFunc(hdl.Convert))
 
 	http.ListenAndServe(":3333", r)
 }
