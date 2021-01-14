@@ -2,8 +2,14 @@ package rmclient
 
 import (
 	"context"
-	"errors"
 	"io"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gofrs/uuid"
+	"github.com/juruen/rmapi/api"
+	"github.com/juruen/rmapi/model"
+	"github.com/juruen/rmapi/transport"
+	"github.com/pkg/errors"
 )
 
 type Client struct{}
@@ -13,10 +19,150 @@ type AuthResponse struct {
 	UserID string
 }
 
-func (c *Client) Auth(ctx context.Context, code string) (*AuthResponse, error) {
-	return nil, errors.New("implement me")
+const (
+	deviceDesc = "desktop-linux"
+	//deviceUuid = "c9136f4f-4bb4-4860-9a80-61246ed245b3"
+
+	authHost         = "https://my.remarkable.com"
+	docHost          = "https://document-storage-production-dot-remarkable-production.appspot.com"
+	newTokenDevice   = authHost + "/token/json/2/device/new"
+	newUserDevice    = authHost + "/token/json/2/user/new"
+	urlUploadRequest = docHost + "/document-storage/json/2/upload/request"
+	urlUpdateStatus  = docHost + "/document-storage/json/2/upload/update-status"
+)
+
+type jwtRmClaims struct {
+	UserID string `json:"auth0-userid"`
+	jwt.StandardClaims
 }
 
-func (c *Client) Upload(ctx context.Context, name string, r io.Reader) error {
-	return errors.New("not implemented")
+func init() {
+	transport.RmapiUserAGent = "SendReadable/1.0; +https://sendreadable.utrack.dev"
+}
+
+func (c *Client) Auth(ctx context.Context, code string) (*AuthResponse, error) {
+	cli := transport.CreateHttpClientCtx(model.AuthTokens{})
+
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot generate new UUID v4")
+	}
+
+	req := model.DeviceTokenRequest{code, deviceDesc, uuid.String()}
+
+	resp := transport.BodyString{}
+	err = cli.Post(transport.EmptyBearer, newTokenDevice, req, &resp)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot create new device token")
+	}
+
+	cl := &jwtRmClaims{}
+
+	_, _, err = new(jwt.Parser).ParseUnverified(resp.Content, cl)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot parse rM JWT claims")
+	}
+
+	cli.Tokens.DeviceToken = resp.Content
+
+	err = cli.Post(transport.DeviceBearer, newUserDevice, nil, &resp)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot create new user token")
+	}
+
+	return &AuthResponse{
+		Token:  resp.Content,
+		UserID: cl.UserID,
+	}, nil
+}
+
+func (c *Client) Upload(ctx context.Context, name string, r io.Reader, tok string) error {
+	cli := transport.CreateHttpClientCtx(model.AuthTokens{UserToken: tok})
+
+	tree, err := api.DocumentsFileTree(&cli)
+	if err != nil {
+		return errors.Wrap(err, "cannot get root FS structure")
+	}
+	var dirID string
+	dir, err := tree.NodeByPath("/SendReadable", tree.Root())
+	if err != nil {
+		dirID, err = createDir(cli, tree.Root().Id(), "SendReadable")
+		if err != nil {
+			return errors.Wrap(err, "creating directory")
+		}
+	} else {
+		dirID = dir.Id()
+	}
+
+	return uploadDoc(cli, dirID, name, r)
+}
+
+func createDir(cli transport.HttpClientCtx, parentId string, name string) (string, error) {
+	dirUploadRsp, err := uploadRequest(cli, "", model.DirectoryType)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot create request")
+	}
+
+	dr, err := createDirectoryZip(dirUploadRsp.ID)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot create asset zip")
+	}
+
+	err = cli.PutStream(transport.UserBearer, dirUploadRsp.BlobURLPut, dr)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot upload model's data")
+	}
+
+	metaDoc := model.CreateUploadDocumentMeta(dirUploadRsp.ID, model.DirectoryType, parentId, name)
+
+	err = cli.Put(transport.UserBearer, urlUpdateStatus, metaDoc, nil)
+
+	if err != nil {
+		return "", errors.Wrap(err, "cannot move directory entry")
+	}
+
+	doc := metaDoc.ToDocument()
+
+	return doc.ID, err
+}
+
+func uploadDoc(cli transport.HttpClientCtx, dirID string, name string, r io.Reader) error {
+	rsp, err := uploadRequest(cli, "", model.DocumentType)
+	if err != nil {
+		return errors.Wrap(err, "cannot create request")
+	}
+	if !rsp.Success {
+		return errors.New("upload request did not succeed")
+	}
+
+	zip, err := createFileZip(rsp.ID, r)
+	if err != nil {
+		return errors.Wrap(err, "cannot create content zipfile")
+	}
+
+	err = cli.PutStream(transport.UserBearer, rsp.BlobURLPut, zip)
+
+	if err != nil {
+		return errors.Wrap(err, "failed to upload zip document")
+	}
+
+	metaDoc := model.CreateUploadDocumentMeta(rsp.ID, model.DocumentType, dirID, name)
+
+	err = cli.Put(transport.UserBearer, urlUpdateStatus, metaDoc, nil)
+
+	return errors.Wrap(err, "failed to move entry")
+}
+
+func uploadRequest(cli transport.HttpClientCtx, id string, entryType string) (model.UploadDocumentResponse, error) {
+	uploadReq := model.CreateUploadDocumentRequest(id, entryType)
+	uploadRsp := make([]model.UploadDocumentResponse, 0)
+
+	err := cli.Put(transport.UserBearer, urlUploadRequest, uploadReq, &uploadRsp)
+
+	if err != nil {
+		return model.UploadDocumentResponse{}, errors.Wrap(err, "cannot send upload request")
+	}
+
+	return uploadRsp[0], nil
 }
