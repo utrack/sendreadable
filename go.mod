@@ -11,6 +11,7 @@ require (
 	github.com/markbates/pkger v0.17.1
 	github.com/pkg/errors v0.9.1
 	github.com/ryboe/q v1.0.12
+	github.com/satori/go.uuid v0.0.0-20180103174451-36e9d2ebbde5
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/image v0.0.0-20201208152932-35266b937fa6

@@ -4,39 +4,60 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-	"github.com/utrack/sendreadable/pkg/rmclient"
 )
 
-type Auth struct {
-	rm *rmclient.Client
+const cookieName = "tok"
 
-	jwtKey interface{}
-}
+func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		pageRender(w, r, pageRequest{
+			customTpl: tplLogin,
+		})
+		return
+	}
 
-func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
 	code := r.FormValue("code")
 	if code == "" {
-		pageRenderErr(w, r, errors.New("Empty code provided"))
+		pageRender(w, r, pageRequest{Err: errors.New("Empty code provided"), customTpl: tplLogin})
 		return
 	}
 
-	rsp, err := a.rm.Auth(r.Context(), code)
+	rsp, err := h.rm.Auth(r.Context(), code)
 	if err != nil {
-		pageRenderErr(w, r, errors.Wrap(err, "cannot get reMarkable user info"))
+		pageRender(w, r, pageRequest{Err: errors.Wrap(err, "cannot get reMarkable user info"), customTpl: tplLogin})
 		return
 	}
 
-	tok, err := jwtGen(a.jwtKey, rsp.Token)
+	tok, err := jwtGen(h.jwtKey, rsp.Token)
 	if err != nil {
-		pageRenderErr(w, r, errors.Wrap(err, "cannot generate JWT token"))
+		pageRender(w, r, pageRequest{Err: errors.Wrap(err, "cannot generate JWT token"), customTpl: tplLogin})
 	}
 
-	pageRender(w, r, pageRequest{
-		LoggedIn: &pageLoginInfo{
-			Token: tok,
-		},
-	})
+	// if strings.HasPrefix(r.Header.Get("referer"), "http") {
+	// 	isSecure = false
+	// }
 
+	coo := &http.Cookie{
+		Name:     cookieName,
+		Value:    tok,
+		Secure:   h.secure,
+		HttpOnly: true,
+		MaxAge:   60 * 60 * 24 * 7 * 4,
+	}
+	http.SetCookie(w, coo)
+
+	http.Redirect(w, r, "/", 303)
+}
+
+func (h Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	coo := &http.Cookie{Name: cookieName,
+		Secure:   true,
+		HttpOnly: true,
+		MaxAge:   -1,
+	}
+	http.SetCookie(w, coo)
+
+	http.Redirect(w, r, "/", 303)
 }

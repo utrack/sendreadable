@@ -1,14 +1,18 @@
 package handlers
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
 )
 
 type pageRequest struct {
-	Err      error
-	LoggedIn *pageLoginInfo
+	Err            error
+	LoggedIn       *pageLoginInfo
+	DoLogout       bool
+	customTpl      *template.Template
+	SuccessMessage string
 }
 
 type pageLoginInfo struct {
@@ -20,13 +24,24 @@ func pageRenderErr(w http.ResponseWriter, r *http.Request, err error) {
 	pageRender(w, r, pageRequest{Err: err})
 }
 func pageRender(w http.ResponseWriter, r *http.Request, rsp pageRequest) {
-	w.Header().Set("Link", "</assets/style.css>; rel=preload;")
-	if rsp.Err == nil {
-		w.Header().Set("Cache-Control", "public, max-age=3600, stale-if-error=60")
-	} else {
-		w.Header().Set("Cache-Control", "public, max-age=60, stale-if-error=60")
+	if rsp.LoggedIn != nil {
 	}
-	err := tpl.Execute(w, rsp)
+	if rsp.DoLogout {
+		coo := &http.Cookie{Name: cookieName,
+			MaxAge:   -1,
+			Secure:   true,
+			HttpOnly: true,
+		}
+		http.SetCookie(w, coo)
+	}
+
+	w.Header().Set("Link", "</assets/style.css>; rel=preload;")
+
+	ct := rsp.customTpl
+	if ct == nil {
+		ct = tpl
+	}
+	err := ct.Execute(w, rsp)
 	if err != nil {
 		logrus.Error("error when rendering the template", err)
 	}

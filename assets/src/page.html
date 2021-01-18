@@ -9,8 +9,20 @@
         <link rel="stylesheet" href="/assets/style.css">
     </head>
     <body>
-        <div class="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-            <div class="relative py-3 sm:max-w-full sm:mx-10">
+        <div class="min-h-screen bg-gray-100 pb-6 flex flex-col md:flex-row sm:justify-center sm:py-12">
+            <div class="sm:pt-3 relative sm:max-w-full sm:mx-10 md:ml-5 md:order-5">
+                <div class="relative px-3 bg-white shadow-lg sm:rounded-3xl sm:p-10 mb-2 sm:mb-5 md:mb-0">
+                    <div class="flex flex-row md:flex-col md:justify-center">
+                        {{if not .LoggedIn }}
+                        <p class="flex-grow">You're not logged in. Login to upload documents to reMarkable.</p>
+                        <div class="flex relative items-center md:mt-5">
+                            <a href="/login" class=" justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Login</a>
+                        </div>
+                        {{ end }}
+                    </div>
+                </div>
+            </div>
+            <div class="relative md:pt-3 pb-3 sm:max-w-full sm:mx-10 md:mr-0">
                 <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-10">
                     <div class="relative sm:px-5 pb-5 w-full">
                         <p class="text-3xl font-semibold font-sans sm:text-left  text-center">SendReadable</p>
@@ -23,16 +35,23 @@
                         <form>
                             <div class="flex sm:flex-row flex-col md:flex-col">
                                 <label for="url" class="sr-only">Article URL</label>
-                                <input type="text" id="url" name="url" placeholder="Article URL" class="focus:ring-indigo-500 focus:border-indigo-500 pl-7 pr-12 w-full sm:text-sm border-gray-300 rounded-md">
+                                <input type="text" id="url" name="url" placeholder="Article URL" class="focus:ring-indigo-500 focus:border-indigo-500 px-3 w-full sm:text-sm border-gray-300 rounded-md">
                                 <input type="submit" value="Download" class="justify-center sm:mt-0 md:mt-3 mt-3 sm:ml-3 md:ml-0 ml-0 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                {{ if .LoggedIn }}
+                                <input type="submit" formmethod="POST" value="Send to rM" class="justify-center sm:mt-0 md:mt-1 mt-1 sm:ml-3 md:ml-0 ml-0 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                {{ end }}
                             </div>
                         </form>
                         {{ if .Err }}
-                        <div class="border mt-5 bg-red-200 px-10 py-5 md:m-5 text-gray-700 sm:text-left text-center">
+                        <div class="border mt-5 bg-red-200 border-red-500 px-10 py-5 md:m-5 text-gray-700 sm:text-left text-center">
                             {{ .Err.Error }}
                         </div>
                         {{ end }}
-
+                        {{ if .SuccessMessage }}
+                        <div class="border mt-5 bg-green-200 border-green-500 px-10 py-5 md:m-5 text-gray-700 sm:text-left text-center">
+                            {{ .SuccessMessage }}
+                        </div>
+                        {{ end }}
                     </div>
                     <div class="relative sm:pl-7">
                         <p>If you notice any problems, or have any suggestions - drop me an email to nick+sendreadable АT koptelov DОТ me.</p>

@@ -14,7 +14,6 @@ import (
 func createDirectoryZip(id string) (io.Reader, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 512))
 	w := zip.NewWriter(buf)
-	defer w.Close()
 
 	f, err := w.Create(fmt.Sprintf("%s.content", id))
 	if err != nil {
@@ -22,6 +21,8 @@ func createDirectoryZip(id string) (io.Reader, error) {
 	}
 
 	f.Write([]byte("{}"))
+	w.Flush()
+	w.Close()
 
 	return bytes.NewReader(buf.Bytes()), nil
 }
@@ -29,7 +30,6 @@ func createDirectoryZip(id string) (io.Reader, error) {
 func createFileZip(id string, doc io.Reader) (io.Reader, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 1048576))
 	w := zip.NewWriter(buf)
-	defer w.Close()
 
 	f, err := w.Create(fmt.Sprintf("%s.pdf", id))
 	if err != nil {
@@ -57,6 +57,8 @@ func createFileZip(id string, doc io.Reader) (io.Reader, error) {
 	}
 
 	f.Write([]byte(c))
+	w.Flush()
+	w.Close()
 
 	return bytes.NewReader(buf.Bytes()), nil
 }

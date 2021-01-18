@@ -7,12 +7,17 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gofrs/uuid"
 	"github.com/juruen/rmapi/api"
+	"github.com/juruen/rmapi/log"
 	"github.com/juruen/rmapi/model"
 	"github.com/juruen/rmapi/transport"
 	"github.com/pkg/errors"
 )
 
 type Client struct{}
+
+func New() *Client {
+	return &Client{}
+}
 
 type AuthResponse struct {
 	Token  string
@@ -38,6 +43,7 @@ type jwtRmClaims struct {
 
 func init() {
 	transport.RmapiUserAGent = "SendReadable/1.0; +https://sendreadable.utrack.dev"
+	log.InitLog()
 }
 
 func (c *Client) Auth(ctx context.Context, code string) (*AuthResponse, error) {

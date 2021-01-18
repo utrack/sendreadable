@@ -1,0 +1,42 @@
+<!doctype html>
+<html class="no-js" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>SendReadable / Login</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="/assets/style.css">
+    </head>
+    <body>
+        <div class="min-h-screen bg-gray-100 pb-6 flex flex-col md:flex-row sm:justify-center sm:py-12">
+
+            <div class="relative md:pt-3 pb-3 sm:max-w-full sm:mx-10 ">
+                <div class="relative px-4 py-10 bg-white shadow-lg sm:p-10">
+                    <div class="relative sm:px-5 pb-5 w-full">
+                        <p class="text-3xl font-semibold font-sans sm:text-left  text-center">Login</p>
+                    </div>
+                    <div class="relative">
+                        <p>Visit <a href="https://my.remarkable.com/connect/desktop" class="underline text-blue-600 hover:text-blue-800 visited:text-purple-600">reMarkable</a> to get your one-time code, then paste it here.</p>
+                    </div>
+                    <div class="relative py-5">
+
+                        <form method="POST">
+                            <div class="flex flex-row">
+                                <label for="url" class="sr-only">Code</label>
+                                <input type="text" id="code" name="code" placeholder="Code" class="focus:ring-indigo-500 focus:border-indigo-500 px-3 w-full sm:text-sm border-gray-300 rounded-md">
+                                <input type="submit" value="Login" class="justify-center ml-2 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            </div>
+                        </form>
+                        {{ if .Err }}
+                        <div class="border mt-5 bg-red-200 border-red-500 px-10 py-5 md:m-5 text-gray-700 sm:text-left text-center">
+                            {{ .Err.Error }}
+                        </div>
+                        {{ end }}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
