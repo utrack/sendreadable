@@ -76,7 +76,7 @@ func (h Handler) Convert(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	err = h.rm.Upload(r.Context(), res.ArticleName+".pdf", f, rmToken)
+	err = h.rm.Upload(r.Context(), res.ArticleName, f, rmToken)
 	preq.Err = errors.Wrap(err, "cannot send file to reMarkable")
 	if err == nil {
 		preq.SuccessMessage = "Sent '" + res.ArticleName + ".pdf'"
