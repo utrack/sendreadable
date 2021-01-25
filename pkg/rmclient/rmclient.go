@@ -3,9 +3,9 @@ package rmclient
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gofrs/uuid"
 	"github.com/juruen/rmapi/api"
 	"github.com/juruen/rmapi/log"
 	"github.com/juruen/rmapi/model"
@@ -20,7 +20,7 @@ func New() *Client {
 }
 
 type AuthResponse struct {
-	Token  string
+	Tokens Tokens
 	UserID string
 }
 
@@ -47,44 +47,51 @@ func init() {
 }
 
 func (c *Client) Auth(ctx context.Context, code string) (*AuthResponse, error) {
-	cli := transport.CreateHttpClientCtx(model.AuthTokens{})
 
-	uuid, err := uuid.NewV4()
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot generate new UUID v4")
-	}
-
-	req := model.DeviceTokenRequest{code, deviceDesc, uuid.String()}
-
-	resp := transport.BodyString{}
-	err = cli.Post(transport.EmptyBearer, newTokenDevice, req, &resp)
-
+	devToken, err := getDeviceToken(code)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create new device token")
 	}
 
 	cl := &jwtRmClaims{}
 
-	_, _, err = new(jwt.Parser).ParseUnverified(resp.Content, cl)
+	_, _, err = new(jwt.Parser).ParseUnverified(devToken, cl)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse rM JWT claims")
 	}
 
-	cli.Tokens.DeviceToken = resp.Content
-
-	err = cli.Post(transport.DeviceBearer, newUserDevice, nil, &resp)
+	userToken, err := getUserToken(devToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create new user token")
 	}
 
 	return &AuthResponse{
-		Token:  resp.Content,
 		UserID: cl.UserID,
+		Tokens: Tokens{
+			Device:          devToken,
+			User:            userToken,
+			UserRefreshedAt: time.Now(),
+		},
 	}, nil
 }
 
-func (c *Client) Upload(ctx context.Context, name string, r io.Reader, tok string) error {
-	cli := transport.CreateHttpClientCtx(model.AuthTokens{UserToken: tok})
+type Tokens struct {
+	// Device token used to create and refresh user tokens.
+	Device string
+	// User tokens used for all operations.
+	User            string
+	UserRefreshedAt time.Time
+}
+
+func (c *Client) Upload(ctx context.Context, name string, r io.Reader, tok *Tokens) error {
+	if tok.UserRefreshedAt.Before(time.Now().Add(-time.Hour)) {
+		userTok, err := getUserToken(tok.Device)
+		if err != nil {
+			return errors.Wrap(err, "cannot refresh user token")
+		}
+		tok.User = userTok
+	}
+	cli := transport.CreateHttpClientCtx(model.AuthTokens{UserToken: tok.User})
 
 	tree, err := api.DocumentsFileTree(&cli)
 	if err != nil {

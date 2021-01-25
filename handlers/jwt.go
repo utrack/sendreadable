@@ -5,6 +5,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	uuid "github.com/satori/go.uuid"
+	"github.com/utrack/sendreadable/pkg/rmclient"
 )
 
 const jwtIssuer = "sendreadable.utrack.dev"
@@ -12,13 +13,14 @@ const jwtIssuer = "sendreadable.utrack.dev"
 type jwtClaims struct {
 	jwt.StandardClaims
 
-	RmJWT string `json:"rmtok"`
-	ID    string `json:"id"`
+	RmUserTok   string `json:"rmtok"`
+	RmDeviceTok string `json:"rmtok_device"`
+	ID          string `json:"id"`
 }
 
-func jwtGen(key interface{}, rmTok string) (string, error) {
+func jwtGen(key interface{}, rmTok rmclient.Tokens) (string, error) {
 	//	jwt.NewWithClaims(jwt.SigningMethodRS512,
-	claims := jwtClaims{RmJWT: rmTok}
+	claims := jwtClaims{RmUserTok: rmTok.User, RmDeviceTok: rmTok.Device}
 	claims.IssuedAt = time.Now().Unix()
 	claims.ExpiresAt = time.Now().Add(time.Hour * 24 * 7 * 30).Unix()
 	claims.Issuer = jwtIssuer

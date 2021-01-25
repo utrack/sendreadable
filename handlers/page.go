@@ -24,6 +24,8 @@ func pageRenderErr(w http.ResponseWriter, r *http.Request, err error) {
 	pageRender(w, r, pageRequest{Err: err})
 }
 func pageRender(w http.ResponseWriter, r *http.Request, rsp pageRequest) {
+	w.WriteHeader(500)
+
 	if rsp.LoggedIn != nil {
 	}
 	if rsp.DoLogout {

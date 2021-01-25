@@ -8,6 +8,18 @@ import (
 
 const cookieName = "tok"
 
+func (h Handler) setCookie(w http.ResponseWriter, tok string) {
+
+	coo := &http.Cookie{
+		Name:     cookieName,
+		Value:    tok,
+		Secure:   h.secure,
+		HttpOnly: true,
+		MaxAge:   60 * 60 * 24 * 7 * 4,
+	}
+	http.SetCookie(w, coo)
+}
+
 func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		pageRender(w, r, pageRequest{
@@ -30,7 +42,7 @@ func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tok, err := jwtGen(h.jwtKey, rsp.Token)
+	tok, err := jwtGen(h.jwtKey, rsp.Tokens)
 	if err != nil {
 		pageRender(w, r, pageRequest{Err: errors.Wrap(err, "cannot generate JWT token"), customTpl: tplLogin})
 	}
@@ -39,14 +51,7 @@ func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 	// 	isSecure = false
 	// }
 
-	coo := &http.Cookie{
-		Name:     cookieName,
-		Value:    tok,
-		Secure:   h.secure,
-		HttpOnly: true,
-		MaxAge:   60 * 60 * 24 * 7 * 4,
-	}
-	http.SetCookie(w, coo)
+	h.setCookie(w, tok)
 
 	http.Redirect(w, r, "/", 303)
 }
