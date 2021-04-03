@@ -9,7 +9,6 @@ import (
 const cookieName = "tok"
 
 func (h Handler) setCookie(w http.ResponseWriter, tok string) {
-
 	coo := &http.Cookie{
 		Name:     cookieName,
 		Value:    tok,

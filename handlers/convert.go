@@ -55,6 +55,7 @@ func (h Handler) Convert(w http.ResponseWriter, r *http.Request) {
 		preq.DoLogout = true
 		preq.Err = errors.New("empty token")
 		pageRender(w, r, preq)
+		return
 	}
 
 	if u == "" {
@@ -87,10 +88,15 @@ func (h Handler) Convert(w http.ResponseWriter, r *http.Request) {
 
 	oldTok := rmToken
 	err = h.rm.Upload(r.Context(), res.ArticleName, f, &rmToken)
-	preq.Err = errors.Wrap(err, "cannot send file to reMarkable")
-	if err == nil {
-		preq.SuccessMessage = "Sent '" + res.ArticleName + "'"
+	if err != nil {
+		preq.Err = errors.Wrap(err, "cannot send file to reMarkable")
+		preq.DoLogout = true
+		pageRender(w, r, preq)
+		return
 	}
+
+	preq.SuccessMessage = "Sent '" + res.ArticleName + "'"
+
 	if oldTok != rmToken {
 		tok, err := jwtGen(h.jwtKey, rmToken)
 		if err == nil {

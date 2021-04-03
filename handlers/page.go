@@ -24,11 +24,8 @@ func pageRenderErr(w http.ResponseWriter, r *http.Request, err error) {
 	pageRender(w, r, pageRequest{Err: err})
 }
 func pageRender(w http.ResponseWriter, r *http.Request, rsp pageRequest) {
-	w.WriteHeader(500)
-
-	if rsp.LoggedIn != nil {
-	}
 	if rsp.DoLogout {
+		rsp.LoggedIn = nil
 		coo := &http.Cookie{Name: cookieName,
 			MaxAge:   -1,
 			Secure:   true,
@@ -38,6 +35,10 @@ func pageRender(w http.ResponseWriter, r *http.Request, rsp pageRequest) {
 	}
 
 	w.Header().Set("Link", "</assets/style.css>; rel=preload;")
+
+	if rsp.Err != nil {
+		w.WriteHeader(500)
+	}
 
 	ct := rsp.customTpl
 	if ct == nil {

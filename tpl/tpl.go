@@ -33,6 +33,7 @@ const text = `
 %\usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fontspec}
+\usepackage{ctex} % chinese symbols
 \usepackage$$ if .Languages $$[main=$$ StringsJoin .Languages "," $$]$$ end $${babel}
 
 \setsansfont[Path = $$ .FontPath $$/] {OpenSans-Regular}

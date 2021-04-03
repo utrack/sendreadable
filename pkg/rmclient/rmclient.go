@@ -85,6 +85,9 @@ type Tokens struct {
 
 func (c *Client) Upload(ctx context.Context, name string, r io.Reader, tok *Tokens) error {
 	if tok.UserRefreshedAt.Before(time.Now().Add(-time.Hour)) {
+		if tok.Device == "" {
+			return errors.New("rM auth method had been changed to be more stable, please relogin. Sorry for the inconvenience :(")
+		}
 		userTok, err := getUserToken(tok.Device)
 		if err != nil {
 			return errors.Wrap(err, "cannot refresh user token")
