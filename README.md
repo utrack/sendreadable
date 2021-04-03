@@ -2,6 +2,8 @@
 
 A small service that converts web articles to PDFs. It is possible to download them to your PC or send them straight to reMarkable via reMarkable's API.
 
+You can find a public instance at https://sendreadable.utrack.dev .
+
 This is something I've jotted down over one weekend - the code is dirty and awful, there's not much to configure, but it works.
 
 ## Prerequisites
