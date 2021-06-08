@@ -5,7 +5,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/juruen/rmapi/api"
 	"github.com/juruen/rmapi/log"
 	"github.com/juruen/rmapi/model"
@@ -21,7 +20,6 @@ func New() *Client {
 
 type AuthResponse struct {
 	Tokens Tokens
-	UserID string
 }
 
 const (
@@ -36,11 +34,6 @@ const (
 	urlUpdateStatus  = docHost + "/document-storage/json/2/upload/update-status"
 )
 
-type jwtRmClaims struct {
-	UserID string `json:"auth0-userid"`
-	jwt.StandardClaims
-}
-
 func init() {
 	transport.RmapiUserAGent = "SendReadable/1.0; +https://sendreadable.utrack.dev"
 	log.InitLog()
@@ -53,20 +46,12 @@ func (c *Client) Auth(ctx context.Context, code string) (*AuthResponse, error) {
 		return nil, errors.Wrap(err, "cannot create new device token")
 	}
 
-	cl := &jwtRmClaims{}
-
-	_, _, err = new(jwt.Parser).ParseUnverified(devToken, cl)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot parse rM JWT claims")
-	}
-
 	userToken, err := getUserToken(devToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create new user token")
 	}
 
 	return &AuthResponse{
-		UserID: cl.UserID,
 		Tokens: Tokens{
 			Device:          devToken,
 			User:            userToken,
