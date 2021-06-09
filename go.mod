@@ -7,10 +7,10 @@ require (
 	github.com/go-chi/chi v1.5.1
 	github.com/go-shiori/go-readability v0.0.0-20201011032228-bdc871772408
 	github.com/gofrs/uuid v4.0.0+incompatible
-	github.com/juruen/rmapi v0.0.13
+	github.com/juruen/rmapi v0.0.15
 	github.com/markbates/pkger v0.17.1
 	github.com/pkg/errors v0.9.1
-	github.com/ryboe/q v1.0.12
+	github.com/ryboe/q v1.0.13
 	github.com/satori/go.uuid v0.0.0-20180103174451-36e9d2ebbde5
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1 // indirect

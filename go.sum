@@ -76,6 +76,8 @@ github.com/jonboulle/clockwork v0.1.0/go.mod h1:Ii8DK3G1RaLaWxj9trq07+26W01tbo22
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/juruen/rmapi v0.0.13 h1:GffYEOxF3Vr3lsoT2npbAgh0/Da9DnWAXU6SJZjfNWM=
 github.com/juruen/rmapi v0.0.13/go.mod h1:5SAwc72wHOzevaSswtjch6061vuaWaI0Tq8ylPSMveI=
+github.com/juruen/rmapi v0.0.15 h1:GiUfNDhNAy5gwA0lk9oo6W78JToIxHCRpJ9dQo8lE/0=
+github.com/juruen/rmapi v0.0.15/go.mod h1:xTtU9seRhuMw8ASmzQ6yWy3i5knzwVKTFUrWogtQmoo=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
@@ -121,6 +123,8 @@ github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6So
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/ryboe/q v1.0.12 h1:Ehx4fAUEaZ5KW9Cf9w+ShQ41r5Znc5076jPdnqbfZ3o=
 github.com/ryboe/q v1.0.12/go.mod h1:6xM6Lm3ZAh5H8d85zLohckSJcqIjJspf1gGkWWS8YGs=
+github.com/ryboe/q v1.0.13 h1:A7lqkemc1+OmnhjH5wSrrJZZdVwEiLisOoP9QAEEAQk=
+github.com/ryboe/q v1.0.13/go.mod h1:ISWUxiBpZfTx3deLPD3TWaP4R8ZUw98Ki1IUVCo2Mjc=
 github.com/satori/go.uuid v0.0.0-20180103174451-36e9d2ebbde5 h1:tfcGHuraNSEY9xRb9ckCMqMD7xAjzrYI1WpD7DA+nz8=
 github.com/satori/go.uuid v0.0.0-20180103174451-36e9d2ebbde5/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
 github.com/sergi/go-diff v1.1.0 h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=
