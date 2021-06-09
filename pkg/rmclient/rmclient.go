@@ -10,6 +10,7 @@ import (
 	"github.com/juruen/rmapi/model"
 	"github.com/juruen/rmapi/transport"
 	"github.com/pkg/errors"
+	"github.com/ryboe/q"
 )
 
 type Client struct{}
@@ -26,7 +27,7 @@ const (
 	deviceDesc = "desktop-linux"
 	//deviceUuid = "c9136f4f-4bb4-4860-9a80-61246ed245b3"
 
-	authHost         = "https://my.remarkable.com"
+	authHost         = "https://webapp-production-dot-remarkable-production.appspot.com"
 	docHost          = "https://document-storage-production-dot-remarkable-production.appspot.com"
 	newTokenDevice   = authHost + "/token/json/2/device/new"
 	newUserDevice    = authHost + "/token/json/2/user/new"
@@ -50,6 +51,7 @@ func (c *Client) Auth(ctx context.Context, code string) (*AuthResponse, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create new user token")
 	}
+	q.Q(devToken, userToken)
 
 	return &AuthResponse{
 		Tokens: Tokens{
